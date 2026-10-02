@@ -15,7 +15,7 @@ npm ci
 npm start
 ```
 
-Open **http://localhost:4747**. No account with Credit Tracker is needed. Start with a provider's **Connect** button. The server binds only to your computer's loopback interface; this release is a personal, single-user app. Do not expose it to the internet or proxy it without authentication.
+Open **http://localhost:4747**. No account with Credit Tracker is needed. Choose **Add account**, then select a provider. Only connected providers appear on the dashboard. The server binds only to your computer's loopback interface; this release is a personal, single-user app. Do not expose it to the internet or proxy it without authentication.
 
 ## Connections
 
@@ -35,7 +35,7 @@ For OpenAI, create an **organization admin key**, not a project generation key. 
 ### Browser extension setup (Chrome / Chromium)
 
 1. Open `chrome://extensions`, enable **Developer mode**, select **Load unpacked**, and choose the project's `extension` directory.
-2. In the dashboard, open **Browser connection**, click **Get pairing code**, and paste it into the extension popup. The code expires in five minutes and works once.
+2. In the dashboard, open **Browser extension**, click **Get pairing code**, and paste it into the extension popup. The code expires in five minutes and works once.
 3. Connect a provider using **Browser balance**. Choose what the figure means (wallet balance, spend, or remaining allowance), its currency/unit, and its billing page URL.
 4. Sign in to the provider in Chrome. Open its billing page for the account you want to track.
 5. Open the extension, select the provider, and click **Select balance on this page**. Approve access to that provider's site.
@@ -53,7 +53,7 @@ The initial release supports full numeric amounts such as `$1,234.56`. Select on
 - Browser refresh opens the saved billing URL in a background tab and closes that temporary tab afterwards. It never clicks the provider's purchasing or generation controls.
 - The selected element must remain visible, unique, and in the same surrounding text context. Login expiry or layout changes produce an error; select the balance again to repair the connection.
 - Failed refreshes keep the last successful value, labeled with its timestamp and error. Provider reporting delays still apply.
-- Cloud spend is distinct from wallet balance. The dashboard total includes only reported USD wallet balances, with stale values disclosed. Credits, other currencies, allowances, and spend are not mixed into it.
+- Cloud spend is distinct from wallet balance. Each account shows its own reported value and unit; there is no combined wallet total.
 
 ## Data and security
 

@@ -24,11 +24,12 @@ test("connect, refresh, errors, disconnect and mobile layout", async ({
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "A little less checking." }),
+    page.getByRole("heading", { name: "Accounts", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Refresh all", exact: true }),
   ).toBeDisabled();
+  await page.locator("#add-account").click();
   await page.getByRole("button", { name: "Connect OpenRouter" }).click();
   await page.locator("[name=secret]").fill("fixture-key");
   await page
@@ -39,7 +40,8 @@ test("connect, refresh, errors, disconnect and mobile layout", async ({
       has: page.getByRole("heading", { name: "OpenRouter", exact: true }),
     }),
   ).toContainText("$42.50");
-  await expect(page.locator("#total")).toHaveText("$42.50");
+  await expect(page.locator("#connected")).toHaveText("1");
+  await expect(page.locator("#total")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Refresh OpenRouter", exact: true })
     .click();
@@ -52,9 +54,12 @@ test("connect, refresh, errors, disconnect and mobile layout", async ({
   await page.getByRole("button", { name: "Manage OpenRouter" }).click();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
+  await expect(page.locator("#connected")).toHaveText("0");
+  await page.locator("#add-account").click();
   await expect(
     page.getByRole("button", { name: "Connect OpenRouter" }),
   ).toBeVisible();
+  await page.locator("#add-dialog [data-close]").click();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
@@ -72,6 +77,15 @@ test("real extension selects and refreshes all six providers against billing-pag
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "credit-extension-"));
   const ext = path.join(tmp, "extension");
   fs.cpSync("extension", ext, { recursive: true });
+  for (const file of ["background.js", "popup.html"]) {
+    const target = path.join(ext, file);
+    fs.writeFileSync(
+      target,
+      fs
+        .readFileSync(target, "utf8")
+        .replaceAll("localhost:4747", "localhost:4748"),
+    );
+  }
   // Grant optional host access up front in the isolated test profile. Production requests it on click.
   const manifest = JSON.parse(fs.readFileSync(path.join(ext, "manifest.json")));
   manifest.host_permissions.push(...manifest.optional_host_permissions);
@@ -170,9 +184,9 @@ test("real extension selects and refreshes all six providers against billing-pag
       await billing.close();
     }
     const dashboard = await context.newPage();
-    await dashboard.goto("http://localhost:4747");
+    await dashboard.goto("http://localhost:4748");
     await expect(dashboard.locator("#connected")).toContainText("6");
-    await expect(dashboard.locator("#total")).toHaveText("$231.00");
+    await expect(dashboard.locator("#total")).toHaveCount(0);
     await dashboard.screenshot({
       path: "test-results/dashboard-connected.png",
       fullPage: true,

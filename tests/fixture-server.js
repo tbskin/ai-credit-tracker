@@ -6,7 +6,7 @@ import { createApp } from "../src/server.js";
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "credit-e2e-"));
 const app = createApp({
   dir,
-  port: 4747,
+  port: 4748,
   reader: async (id, config, key) => {
     if (key === "rejected")
       throw new ProviderError("Key rejected. Reconnect with a valid key.");

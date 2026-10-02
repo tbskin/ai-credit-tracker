@@ -67,45 +67,45 @@ function money(s) {
 }
 function card(p) {
   const a = p.account,
-    s = a?.snapshot,
-    needs = a?.error || low(a) || stale(a);
-  return `<article class="card ${needs ? "alert" : ""}"><div class="card-top"><span class="icon">${esc(p.initial)}</span><div><h3>${esc(p.name)}</h3><div class="source">${p.id === "higgsfield" ? "API wallet" : a ? `${a.mode === "api" ? "API" : "Browser"} connection` : "Not connected"}</div></div>${a ? `<button class="manage" data-manage="${p.id}" aria-label="Manage ${p.name}">···</button>` : ""}</div>${s ? `<div class="amount">${money(s)}</div><p class="metric">${esc(s.label)}${low(a) ? '<span class="tag">Check balance</span>' : ""}</p><p class="detail">${esc(s.detail)}</p>` : `<div class="empty-value">—</div><p class="card-description">${a ? (p.refreshing ? "Fetching your latest numbers…" : a.mode === "browser" ? "Open billing and select the balance with the extension." : "Waiting for the first successful refresh.") : p.category === "AI wallets" ? "Keep an eye on your remaining credits." : "Keep your cloud costs within reach."}</p>`}${a?.error ? `<p class="card-message">${esc(a.error)}</p>` : stale(a) ? '<p class="card-message">This value is older than expected. Refresh to check it.</p>' : ""}<div class="card-bottom">${a ? `<span>${p.refreshing ? "Refreshing…" : s ? esc(age(s.updatedAt)) : "Not yet synced"}</span><a href="${esc(a.config.url || p.url)}" target="_blank" rel="noopener noreferrer">Open billing ↗</a><button class="refresh-icon" data-refresh="${p.id}" aria-label="Refresh ${p.name}" ${p.refreshing ? "disabled" : ""}>↻</button>` : `<span>${p.api ? "API or browser" : "Browser connection"}</span><button class="quiet" data-manage="${p.id}">Connect ${p.name}</button>`}</div></article>`;
+    s = a.snapshot,
+    needs = a.error || low(a) || stale(a);
+  const status = a.error
+    ? "Refresh failed"
+    : low(a)
+      ? "Threshold reached"
+      : stale(a)
+        ? "Outdated"
+        : p.refreshing
+          ? "Refreshing…"
+          : s
+            ? age(s.updatedAt)
+            : "Awaiting balance";
+  return `<article class="card account-row ${needs ? "alert" : ""}">
+    <div class="provider-cell"><span class="icon icon-${p.id}">${esc(p.initial)}</span><div><h3>${esc(p.name)}</h3><span class="source">${p.id === "higgsfield" ? "API wallet" : a.mode === "api" ? "API" : "Browser"}</span></div></div>
+    <div class="balance-cell"><div class="amount">${s ? money(s) : "—"}</div><div class="metric">${esc(s?.label || "Balance")}</div></div>
+    <div class="status-cell"><span class="status ${needs ? "status-warning" : ""}"><span class="dot ${needs ? "" : "live"}"></span>${esc(status)}</span>${a.error ? `<p class="card-message">${esc(a.error)}</p>` : !s && a.mode === "browser" ? '<p class="card-message">Select a balance with the extension.</p>' : ""}</div>
+    <div class="row-actions"><a class="icon-button" href="${esc(a.config.url || p.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${p.name} billing" title="Open billing">↗</a><button class="icon-button" data-refresh="${p.id}" aria-label="Refresh ${p.name}" title="Refresh" ${p.refreshing ? "disabled" : ""}>↻</button><button class="icon-button" data-manage="${p.id}" aria-label="Manage ${p.name}" title="Manage">···</button></div>
+  </article>`;
 }
 function render() {
-  $("#accounts").innerHTML = ["AI wallets", "Cloud services"]
-    .map(
-      (category) =>
-        `<section><div class="section-title"><h2>${category}</h2><span class="rule"></span></div><div class="cards">${state.providers
-          .filter((p) => p.category === category)
-          .map(card)
-          .join("")}</div></section>`,
-    )
-    .join("");
   const connected = state.providers.filter((p) => p.account),
-    wallets = connected.filter(
-      (p) =>
-        p.account.snapshot?.kind === "balance" &&
-        p.account.snapshot.unit === "USD",
-    ),
     attention = connected.filter(
       (p) => p.account.error || low(p.account) || stale(p.account),
     );
-  $("#total").textContent = wallets.length
-    ? new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-      }).format(
-        wallets.reduce((sum, p) => sum + Number(p.account.snapshot.value), 0),
+  $("#accounts").innerHTML = connected.length
+    ? connected.map(card).join("")
+    : '<div class="empty-state"><span class="empty-symbol" aria-hidden="true">＋</span><h3>No accounts connected</h3><button class="quiet" data-add>Add account</button></div>';
+  $("#connected").textContent = connected.length;
+  $("#attention").textContent = attention.length;
+  $("#attention-widget").hidden = !attention.length;
+  $("#provider-list").innerHTML =
+    state.providers
+      .filter((p) => !p.account)
+      .map(
+        (p) =>
+          `<button class="provider-option" data-manage="${p.id}" aria-label="Connect ${p.name}"><span class="icon icon-${p.id}">${esc(p.initial)}</span><span>${esc(p.name)}</span><span class="option-plus" aria-hidden="true">+</span></button>`,
       )
-    : "—";
-  $("#total-note").textContent = wallets.length
-    ? `${wallets.length} USD wallet${wallets.length === 1 ? "" : "s"} · last reported balances${wallets.some((p) => stale(p.account) || p.account.error) ? " · includes stale values" : ""}`
-    : "Connect a wallet to see your balance.";
-  $("#connected").innerHTML = `${connected.length} <span>/ 6 providers</span>`;
-  $("#attention").innerHTML = `${attention.length} <span>accounts</span>`;
-  $("#account-summary").textContent = connected.length
-    ? "A balance is what’s left. Usage is what’s been spent."
-    : "Start with the tools you use.";
+      .join("") || "<p>All available providers are connected.</p>";
   $("#interval").value = state.interval;
   $("#bridge-dot").classList.toggle("live", state.bridgeConnected);
   $("#refresh-all").disabled =
@@ -131,15 +131,16 @@ function fields() {
   const a = selected.account;
   if (mode === "api") {
     $("#fields").innerHTML =
-      `<p>${selected.id === "openrouter" ? "Connect a management key to read your remaining credit balance." : selected.id === "railway" ? "Read current usage and estimated billing with your Railway account." : "This connection shows spend. Choose Browser balance to track remaining wallet credits instead."}</p><label class="field">${esc(selected.apiLabel)}<input name="secret" type="password" autocomplete="off" ${selected.id === "railway" ? "" : "required"}><small>Encrypted on this computer. Never sent to our servers.</small></label>${["railway", "vercel"].includes(selected.id) ? `<label class="field">${selected.id === "railway" ? "Workspace" : "Team"} ID<input name="scope" required value="${esc(a?.config.scope || "")}" placeholder="${selected.id === "railway" ? "Your workspace ID" : "team_…"}"></label>` : ""}${selected.id === "railway" ? "<small>Leave the token empty to use your existing Railway CLI login.</small>" : ""}`;
+      `<p>${selected.id === "openrouter" ? "Reads your credit balance." : selected.id === "railway" ? "Reads usage and estimated billing." : "Tracks spend. Use Browser balance for wallet credits."}</p><label class="field">${esc(selected.apiLabel)}<input name="secret" type="password" autocomplete="off" ${selected.id === "railway" ? "" : "required"}></label>${["railway", "vercel"].includes(selected.id) ? `<label class="field">${selected.id === "railway" ? "Workspace" : "Team"} ID<input name="scope" required value="${esc(a?.config.scope || "")}" placeholder="${selected.id === "railway" ? "Your workspace ID" : "team_…"}"></label>` : ""}${selected.id === "railway" ? "<small>Leave the token empty to use your existing Railway CLI login.</small>" : ""}`;
   } else {
     $("#fields").innerHTML =
-      `<p>Read the balance directly from your signed-in billing page. <button class="quiet" type="button" id="setup-extension">Set up extension</button></p><label class="field">Billing page URL<input name="url" type="url" required value="${esc(a?.config.url || selected.url)}"><small>Use the page for the exact account or workspace you want to track.</small></label><label class="field">What are you tracking?<select name="kind"><option value="balance">Remaining wallet balance</option><option value="spend">Spend this billing period</option><option value="allowance">Remaining included allowance</option></select></label><label class="field">Unit<select name="unit"><option>USD</option><option>credits</option><option>EUR</option><option>GBP</option></select></label><p class="note">After connecting, open your billing page and click Select balance in the extension. You’ll confirm the exact number before it is saved.</p>`;
+      `<p><button class="quiet" type="button" id="setup-extension">Set up extension</button></p><label class="field">Billing page URL<input name="url" type="url" required value="${esc(a?.config.url || selected.url)}"><small>Use your account’s billing URL.</small></label><label class="field">What are you tracking?<select name="kind"><option value="balance">Remaining wallet balance</option><option value="spend">Spend this billing period</option><option value="allowance">Remaining included allowance</option></select></label><label class="field">Unit<select name="unit"><option>USD</option><option>credits</option><option>EUR</option><option>GBP</option></select></label><p class="note">After connecting, choose Select balance in the extension.</p>`;
     $("[name=kind]").value = a?.config.kind || selected.metric;
     $("[name=unit]").value = a?.config.unit || "USD";
   }
 }
 function openConnect(id) {
+  $("#add-dialog").close();
   selected = state.providers.find((p) => p.id === id);
   mode =
     selected.account?.mode ||
@@ -162,6 +163,7 @@ document.addEventListener("click", async (e) => {
   if (!b) return;
   try {
     if (b.hasAttribute("data-close")) b.closest("dialog").close();
+    if (b.hasAttribute("data-add")) $("#add-dialog").showModal();
     if (b.dataset.manage) openConnect(b.dataset.manage);
     if (b.dataset.mode) {
       mode = b.dataset.mode;
@@ -234,6 +236,7 @@ $("#interval").onchange = async (e) => {
   }
 };
 $("#extension-button").onclick = showExtension;
+$("#add-account").onclick = () => $("#add-dialog").showModal();
 $("#pair").onclick = async () => {
   try {
     const result = await api("pair", {});
