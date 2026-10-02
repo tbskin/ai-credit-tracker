@@ -1,0 +1,10 @@
+.env*
+!.env.example
+__pycache__/
+.private/
+.DS_Store
+
+node_modules/
+test-results/
+playwright-report/
+coverage/

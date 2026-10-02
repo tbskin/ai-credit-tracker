@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Credit Tracker — browser balances",
+  "version": "0.1.0",
+  "description": "Read a balance you select on your billing page and send it to your local Credit Tracker.",
+  "permissions": ["storage", "scripting", "alarms", "activeTab"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "optional_host_permissions": [
+    "https://openrouter.ai/*",
+    "https://platform.openai.com/*",
+    "https://console.higgsfield.ai/*",
+    "https://cloud.higgsfield.ai/*",
+    "https://open.higgsfield.ai/*",
+    "https://railway.com/*",
+    "https://railway.app/*",
+    "https://vercel.com/*",
+    "https://supabase.com/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup.html", "default_title": "Credit Tracker" }
+}
