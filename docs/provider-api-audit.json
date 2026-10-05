@@ -1,0 +1,330 @@
+{
+  "checked_at_utc": "2026-10-02T18:08:33.055950+00:00",
+  "scope": "All source files in the listed public SDKs and published schemas were searched for direct and indirect balance fields. This is not a claim to have discovered every private endpoint.",
+  "findings": [
+    {
+      "provider": "OpenRouter",
+      "method": "API",
+      "endpoint": "GET https://openrouter.ai/api/v1/credits",
+      "fields": ["data.total_credits", "data.total_usage"],
+      "calculation": "total_credits - total_usage",
+      "credential": "Management key",
+      "validation": "Official SDK and docs; synthetic adapter tests; no live account key tested",
+      "sources": [
+        "https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits",
+        "https://github.com/OpenRouterTeam/typescript-sdk/blob/main/src/models/operations/getcredits.ts"
+      ]
+    },
+    {
+      "provider": "Railway",
+      "method": "API",
+      "endpoint": "POST https://backboard.railway.com/graphql/v2",
+      "field": "workspace(workspaceId).customer.creditBalance",
+      "excluded": [
+        "currentUsage",
+        "appliedCredits",
+        "remainingUsageCreditBalance (separate usage credit; not merged)"
+      ],
+      "validation": "Official GraphQL schema and successful authenticated read using existing Railway CLI login. Personal account identifiers and amounts omitted.",
+      "sources": [
+        "https://github.com/railwayapp/cli/blob/master/src/gql/schema.json",
+        "https://docs.railway.com/integrations/api"
+      ]
+    },
+    {
+      "provider": "Vercel AI Gateway",
+      "method": "API",
+      "endpoint": "GET https://ai-gateway.vercel.sh/v1/credits",
+      "field": "balance",
+      "credential": "AI Gateway API key",
+      "validation": "Official SDK source and fixture test; not live-account tested",
+      "sources": [
+        "https://github.com/vercel/ai/blob/main/packages/gateway/src/gateway-fetch-metadata.ts"
+      ]
+    },
+    {
+      "provider": "Vercel hosting",
+      "method": "Local browser selection",
+      "finding": "Full official SDK source scan found no verified hosting-wallet read. Team responses and FOCUS billing charges do not establish prepaid credits left. submitPrepaymentBalances is an integration-provider write API, not a customer wallet read.",
+      "validation": "Source audit only; browser integration covered by generic fixtures, not a live account",
+      "sources": [
+        "https://github.com/vercel/sdk",
+        "https://vercel.com/docs/rest-api/teams/get-a-team"
+      ]
+    },
+    {
+      "provider": "Supabase",
+      "method": "Local browser session; exact dashboard JSON response first, selected DOM balance fallback",
+      "endpoint": "GET /platform/organizations/{slug}/billing/credits/balance",
+      "field": "total_balance_cents",
+      "calculation": "total_balance_cents / 100",
+      "finding": "Not found in public Management v1/v2 schema or organization response. Dashboard platform types also contain CustomerResponse.balance and prepaid_credits_balance; use explicit total_balance_cents instead. PAT compatibility not authenticated-tested.",
+      "validation": "Official dashboard query and response schema, real browser fixture test; no live account test",
+      "sources": [
+        "https://github.com/supabase/supabase/blob/master/apps/studio/data/subscriptions/org-balance-query.ts",
+        "https://github.com/supabase/supabase/blob/master/packages/api-types/types/platform.d.ts",
+        "https://api.supabase.com/api/v1-json"
+      ]
+    },
+    {
+      "provider": "Higgsfield API wallet",
+      "method": "Local browser selection",
+      "finding": "Full Python/TypeScript SDK source and published supplementary OpenAPI scan found no API-wallet balance read. Estimate responses contain generation cost, not remaining credits. Official CLI advertises account balances, but equivalence to the separate API wallet remains unverified. Supplementary spec is incomplete; absence is not proof no private API exists.",
+      "validation": "Source audit; real browser fixtures for login persistence and selection; no authenticated API-wallet test",
+      "sources": [
+        "https://docs.higgsfield.ai/docs/openapi.json",
+        "https://docs.higgsfield.ai/docs/concepts/billing-and-retention",
+        "https://github.com/higgsfield-ai/higgsfield-client",
+        "https://github.com/higgsfield-ai/higgsfield-js",
+        "https://github.com/higgsfield-ai/cli"
+      ]
+    },
+    {
+      "provider": "OpenAI",
+      "method": "Local browser selection",
+      "audit": "openai-api-audit.json",
+      "validation": "Full public schema and SDK audit; no signed-in dashboard validation"
+    }
+  ],
+  "scans": [
+    {
+      "provider": "openrouter",
+      "source_files_scanned": 1265,
+      "matching_files": [
+        "src/models/autorouterplugin.ts",
+        "src/models/observabilitybraintrustdestination.ts",
+        "src/models/observabilityopikdestination.ts",
+        "src/models/autobetarouterplugin.ts",
+        "src/models/byokkey.ts",
+        "src/models/observabilitysnowflakedestination.ts",
+        "src/models/updatebyokkeyrequest.ts",
+        "src/models/observabilityarizedestination.ts",
+        "src/models/updateguardrailrequest.ts",
+        "src/models/guardrail.ts",
+        "src/models/observabilityrampdestination.ts",
+        "src/models/batchobject.ts",
+        "src/models/observabilitydatadogdestination.ts",
+        "src/models/observabilityweavedestination.ts",
+        "src/models/createobservabilitydestinationrequest.ts",
+        "src/models/contentfilterbuiltinslug.ts",
+        "src/models/publicendpoint.ts",
+        "src/models/activityitem.ts",
+        "src/models/observabilitysentrydestination.ts",
+        "src/models/createbyokkeyrequest.ts",
+        "src/models/observabilitywebhookdestination.ts",
+        "src/models/observabilitynewrelicdestination.ts",
+        "src/models/messagesoutputconfig.ts",
+        "src/models/outputfusionservertoolitem.ts",
+        "src/models/updateobservabilitydestinationrequest.ts",
+        "src/models/observabilitys3destination.ts",
+        "src/models/createguardrailrequest.ts",
+        "src/models/freemodeldailyrequests.ts",
+        "src/models/submitgenerationfeedbackrequest.ts",
+        "src/models/topproviderinfo.ts",
+        "src/models/observabilitygrafanadestination.ts",
+        "src/models/observabilityotelcollectordestination.ts",
+        "src/models/servertoolengine.ts",
+        "src/models/observabilitylangfusedestination.ts",
+        "src/models/batchdeletedobject.ts",
+        "src/models/observabilitylangsmithdestination.ts",
+        "src/models/observabilityposthogdestination.ts",
+        "src/models/observabilityclickhousedestination.ts",
+        "src/sdk/credits.ts",
+        "src/sdk/batch.ts",
+        "src/sdk/containers.ts",
+        "src/sdk/sdk.ts",
+        "src/lib/model-result.ts",
+        "src/funcs/creditsGetCredits.ts",
+        "src/funcs/batchDelete.ts",
+        "src/funcs/containersPromoteContainerFile.ts",
+        "src/models/operations/getkey.ts",
+        "src/models/operations/getcredits.ts",
+        "src/models/operations/createembeddings.ts",
+        "src/models/operations/getcurrentkey.ts",
+        "src/models/operations/createauthkeyscode.ts",
+        "src/models/operations/index.ts",
+        "src/models/operations/list.ts",
+        "src/models/operations/updatekeys.ts",
+        "src/models/operations/createkeys.ts",
+        "src/models/operations/creatererank.ts",
+        "src/models/errors/paymentrequiredresponseerror.ts",
+        "src/models/errors/openrouterdefaulterror.ts",
+        "src/models/errors/batchpaymentrequiredresponseerror.ts"
+      ]
+    },
+    {
+      "provider": "railway",
+      "source_files_scanned": 470,
+      "matching_files": [
+        "src/telemetry.rs",
+        "src/util/self_update.rs",
+        "src/gql/schema.json",
+        "src/iac/change_set.rs",
+        "src/commands/code.rs",
+        "src/commands/domain.rs",
+        "src/commands/waf.rs",
+        "src/commands/usage.rs",
+        "src/commands/dev.rs",
+        "src/controllers/tcp_proxy.rs",
+        "src/controllers/config/patch.rs",
+        "src/controllers/scale_tui/app.rs",
+        "src/controllers/develop/tui/ui.rs",
+        "src/commands/database/ha.rs",
+        "src/commands/config/mod.rs",
+        "src/commands/code/plumbing.rs",
+        "src/commands/code/bootstrap_setup.rs",
+        "src/commands/mcp/handler.rs",
+        "src/commands/ssh/native.rs",
+        "src/commands/ssh/tel.rs",
+        "src/commands/cloud_agent/telemetry.rs",
+        "src/commands/cloud_agent/mod.rs",
+        "src/commands/cloud_agent/lifecycle.rs",
+        "src/commands/cloud_agent/tui/session.rs",
+        "src/commands/cloud_agent/tui/mod.rs",
+        "src/commands/cloud_agent/tui/app.rs",
+        "src/commands/cloud_agent/herdr/agents.rs",
+        "src/commands/cloud_agent/opencode/auth.rs",
+        "src/commands/code/railway_client/installer.rs"
+      ]
+    },
+    {
+      "provider": "vercel",
+      "source_files_scanned": 1059,
+      "matching_files": [
+        "src/models/createprojectprojectschecksstate.ts",
+        "src/models/readystate.ts",
+        "src/models/getorcreatedriveop.ts",
+        "src/models/getwebhookop.ts",
+        "src/models/apikey.ts",
+        "src/models/getwebhooksop.ts",
+        "src/models/createprojectresponsebody.ts",
+        "src/models/fourhundredandseventeen.ts",
+        "src/models/getrollingreleasebillingstatusop.ts",
+        "src/models/listeventtype.ts",
+        "src/models/getbillingplansop.ts",
+        "src/models/usereventpayload354geolocationnames.ts",
+        "src/models/inviteusertoteamop.ts",
+        "src/models/fiftysix.ts",
+        "src/models/createintegrationstoredirectresponsebody.ts",
+        "src/models/readaccessgroupop.ts",
+        "src/models/canceldeploymentmissingdeploymentsresponse1.ts",
+        "src/models/createdeploymentresponsebody.ts",
+        "src/models/updatemicrofrontendsto.ts",
+        "src/models/getdeploymentgitsourcedeploymentsresponse200applicationjsonresponsebody219type.ts",
+        "src/models/updateresourceop.ts",
+        "src/models/apikeyquota.ts",
+        "src/models/userevent.ts",
+        "src/models/getdeploymentservicesdeploymentsmiddlewarematcher.ts",
+        "src/models/toomanyrequests.ts",
+        "src/models/authuser.ts",
+        "src/models/postteamdsyncrolesop.ts",
+        "src/models/createapikeysop.ts",
+        "src/models/twohundredandtwenty.ts",
+        "src/models/getmemberop.ts",
+        "src/models/logdrainstatus.ts",
+        "src/models/updateprojectresponsebody.ts",
+        "src/models/getprojectmembersop.ts",
+        "src/models/submitbillingdataop.ts",
+        "src/models/uploadprojectavatarresponsebody.ts",
+        "src/models/getconfigurationop.ts",
+        "src/models/invitedteammember.ts",
+        "src/models/submitinvoiceop.ts",
+        "src/models/lasteditedbyprincipal2.ts",
+        "src/models/team.ts",
+        "src/models/patchteamop.ts",
+        "src/models/getprojectsresponsebodyprojectsresponse200applicationjson2projectstype.ts",
+        "src/models/getprojectto1.ts",
+        "src/models/createintegrationstoredirectpropertiesintegrationsresponse200uioptions.ts",
+        "src/models/getintegrationresourceop.ts",
+        "src/models/sourceimages.ts",
+        "src/models/createdeploymentgitsource1.ts",
+        "src/models/listeventtypesresponse.ts",
+        "src/models/getteammembersop.ts",
+        "src/models/importresourceop.ts",
+        "src/models/sdkerror.ts",
+        "src/models/getintegrationresourcesop.ts",
+        "src/models/updateprojectprojectsresponsebuildmachineelastictransition.ts",
+        "src/models/getmicrofrontendsingroupresponsebody.ts",
+        "src/models/responsebodytrustedips.ts",
+        "src/models/updateteammemberop.ts",
+        "src/models/listaccessgroupmembersop.ts",
+        "src/models/createeventop.ts",
+        "src/models/getprojectresponsebody.ts",
+        "src/models/teamlimited.ts",
+        "src/models/createdeploymenthasdeploymentsresponse1.ts",
+        "src/models/updateinstallationop.ts",
+        "src/models/getdeploymentresponsebody.ts",
+        "src/models/updatemicrofrontendsresponsebody.ts",
+        "src/models/getmicrofrontendsingroupto.ts",
+        "src/models/submitprepaymentbalancesop.ts",
+        "src/models/createwebhookop.ts",
+        "src/models/getstoragestoresbyidop.ts",
+        "src/models/uploadprojectavataroidcproviders.ts",
+        "src/models/createstoragestoresblobop.ts",
+        "src/models/getinvoiceop.ts",
+        "src/models/buycreditsop.ts",
+        "src/sdk/integrations.ts",
+        "src/sdk/marketplace.ts",
+        "src/sdk/rollingrelease.ts",
+        "src/sdk/sdk.ts",
+        "src/sdk/billing.ts",
+        "src/funcs/billingBuyCredits.ts",
+        "src/funcs/marketplaceGetInvoice.ts",
+        "src/funcs/marketplaceUpdateInvoice.ts",
+        "src/funcs/integrationsCreateIntegrationStoreDirect.ts",
+        "src/funcs/marketplaceCreateEvent.ts",
+        "src/funcs/rollingReleaseGetRollingReleaseBillingStatus.ts",
+        "src/funcs/integrationsGetBillingPlans.ts",
+        "src/funcs/marketplaceSubmitInvoice.ts",
+        "src/funcs/marketplaceSubmitPrepaymentBalances.ts",
+        "src/funcs/marketplaceFinalizeInstallation.ts",
+        "src/funcs/marketplaceSubmitBillingData.ts"
+      ]
+    },
+    {
+      "provider": "higgsfield-python",
+      "source_files_scanned": 16,
+      "matching_files": [
+        "src/higgsfield_client/__init__.py",
+        "src/higgsfield_client/agents/__init__.py",
+        "src/higgsfield_client/agents/errors.py"
+      ]
+    },
+    {
+      "provider": "higgsfield-typescript",
+      "source_files_scanned": 21,
+      "matching_files": [
+        "src/errors.ts",
+        "src/client.ts",
+        "src/agents/resources.ts",
+        "src/v2/client.ts"
+      ]
+    }
+  ],
+  "specification_snapshots": [
+    {
+      "source_snapshot": "stash-railway-schema.json",
+      "sha256": "3c3d1448f2a746d6e5977ba3aa205889f959c427be5cfe37c72e79b1fa65f2be",
+      "paths": null,
+      "types": 624
+    },
+    {
+      "source_snapshot": "stash-supabase-openapi.json",
+      "sha256": "8873c81f0f0465a17032b78e191ac6d2e89ee5b8cb3245700efed60ba3f6da2c",
+      "paths": 115,
+      "types": null
+    },
+    {
+      "source_snapshot": "stash-supabase-v2.txt",
+      "sha256": "8245dd74ecf9847c4638d67167e79306a064965baaf68ac71c787fcd3c863a17",
+      "paths": 34,
+      "types": null
+    },
+    {
+      "source_snapshot": "stash-higgs-spec.txt",
+      "sha256": "0a728531a484f9879c1cfede03bcab16206e487ebb4b63222af761edb03cb1fe",
+      "paths": 8,
+      "types": null
+    }
+  ]
+}

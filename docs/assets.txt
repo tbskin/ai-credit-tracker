@@ -1,0 +1,5 @@
+Stash logo and favicon: user-supplied blue-wallet-full-kit, original artwork preserved.
+OpenAI, OpenRouter, Railway, Vercel SVG logos: Lobe Icons, https://github.com/lobehub/lobe-icons (MIT).
+Supabase SVG logo: Simple Icons, https://github.com/simple-icons/simple-icons (CC0 collection; trademarks remain with their owners).
+Higgsfield icon: its official API documentation favicon at https://docs.higgsfield.ai/docs/_mintlify/favicons/private-hf/NqDxvodEnQwFKKRR/_generated/favicon/android-chrome-192x192.png . Used for provider identification; not claimed as Stash-owned or MIT-licensed artwork.
+All provider names and marks retain their owners' trademark rights.

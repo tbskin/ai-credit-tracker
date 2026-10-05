@@ -1,11 +1,11 @@
 :root {
-  --bg: #f6f6f8;
+  --bg: #f2f7fc;
   --surface: #fff;
-  --ink: #252532;
-  --muted: #83838e;
-  --line: #e9e9ee;
-  --accent: #6155a5;
-  --sidebar: #24232e;
+  --ink: #193f68;
+  --muted: #62788e;
+  --line: #dce8f4;
+  --accent: #4285c5;
+  --sidebar: #193f68;
   --mint: #3c8c70;
   --warning: #9a6622;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -46,62 +46,36 @@ a {
 }
 .shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 206px 1fr;
 }
-.sidebar {
-  background: var(--sidebar);
-  color: #efeff3;
-  padding: 38px 22px;
+.topbar {
+  max-width: 1230px;
+  margin: 0 auto;
+  padding: 22px 40px;
   display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  align-items: center;
+  justify-content: space-between;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-weight: 650;
-  letter-spacing: -0.6px;
-  font-size: 19px;
-  line-height: 1.15;
-  padding: 0 10px;
+  gap: 5px;
+  font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -2px;
 }
-.mark {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 40px;
-  border: 1px solid #6c687e;
-  border-radius: 12px;
-  color: #d8d1fc;
-  font-size: 25px;
-}
-.nav-current {
-  margin-top: 58px;
-  border-radius: 8px;
-  background: #3a3849;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 13px 16px;
-  font-size: 13px;
-  font-weight: 550;
-}
-.nav-current span {
-  font-size: 19px;
-  color: #c8c0f0;
+.brand img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
 }
 .extension-button {
-  margin-top: auto;
-  background: none;
-  border: 0;
-  color: #afadbb;
-  font-size: 11px;
-  text-align: left;
-  padding: 12px 8px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  padding: 11px 16px;
+  color: var(--ink);
+  font-size: 12px;
 }
 .dot {
   display: inline-block;
@@ -115,9 +89,9 @@ a {
   background: var(--mint);
 }
 main {
-  padding: 54px clamp(24px, 4.5vw, 76px);
+  padding: 38px 40px 70px;
   min-width: 0;
-  max-width: 1550px;
+  max-width: 1230px;
   width: 100%;
   margin: 0 auto;
 }
@@ -185,17 +159,17 @@ h3 {
   margin-bottom: 38px;
 }
 .stat-widget {
-  background: #eae7f4;
+  background: #cce5fb;
   min-width: 184px;
   min-height: 133px;
-  border: 1px solid #dfd9ee;
+  border: 1px solid #aacded;
   border-radius: 12px;
   padding: 22px 24px;
   position: relative;
 }
 .caption {
   display: block;
-  color: #72698d;
+  color: #315d87;
   font-size: 12px;
   font-weight: 500;
 }
@@ -207,13 +181,13 @@ h3 {
   letter-spacing: -2px;
   line-height: 1;
   margin-top: 18px;
-  color: #4c426b;
+  color: #193f68;
 }
 .stat-icon {
   position: absolute;
   right: 21px;
   top: 18px;
-  color: #8477a6;
+  color: #4285c5;
   font-size: 20px;
 }
 .attention-widget {
@@ -255,7 +229,7 @@ h3 {
   border: 0;
   margin-left: 6px;
   padding: 6px 0;
-  max-width: 85px;
+  max-width: 160px;
 }
 .toolbar .quiet {
   white-space: nowrap;
@@ -268,7 +242,7 @@ h3 {
   display: grid;
   grid-template-columns:
     minmax(160px, 1.1fr) minmax(140px, 0.9fr) minmax(140px, 1fr)
-    94px;
+    126px;
   align-items: center;
   gap: 22px;
   padding: 27px 24px;
@@ -581,196 +555,84 @@ code {
   max-width: 90vw;
   z-index: 100;
 }
-@media (min-width: 1500px) {
+@media (max-width: 800px) {
+  .topbar {
+    padding: 16px 22px;
+  }
   main {
-    padding-top: 70px;
+    padding: 24px 22px 50px;
   }
-}
-@media (max-width: 1100px) {
-  .shell {
-    grid-template-columns: 170px 1fr;
-  }
-  .sidebar {
-    padding: 30px 14px;
+  .page-title {
+    margin-bottom: 24px;
   }
   .account-row {
-    gap: 14px;
-    grid-template-columns:
-      minmax(120px, 1fr) minmax(110px, 1fr) minmax(95px, 0.8fr)
-      86px;
-    padding: 24px 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
   }
   .status-cell {
     padding-left: 0;
   }
-  main {
-    padding: 40px 26px;
+  .row-actions {
+    justify-content: flex-end;
+  }
+  .overview {
+    margin-bottom: 24px;
   }
   .toolbar {
-    padding: 20px;
+    padding: 16px;
   }
   .toolbar-actions {
-    gap: 8px;
-  }
-  .toolbar label {
-    font-size: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
   }
 }
-@media (max-width: 800px) {
-  .shell {
-    display: block;
-  }
-  .sidebar {
-    position: static;
-    height: 70px;
-    flex-direction: row;
-    align-items: center;
-    padding: 0 22px;
-    gap: 25px;
+@media (max-width: 480px) {
+  .topbar {
+    padding: 12px 16px;
   }
   .brand {
-    padding: 0;
-    font-size: 14px;
-    gap: 9px;
+    font-size: 30px;
   }
-  .mark {
-    height: 30px;
-    width: 28px;
-    font-size: 20px;
-    border-radius: 8px;
-  }
-  .brand br {
-    display: none;
-  }
-  .brand span:last-child {
-    max-width: 100px;
-  }
-  .nav-current {
-    margin: 0;
-    padding: 10px 14px;
-    font-size: 12px;
-  }
-  .nav-current span {
-    display: none;
+  .brand img {
+    width: 52px;
+    height: 52px;
   }
   .extension-button {
-    margin: 0 0 0 auto;
-    padding: 0;
     font-size: 10px;
+    padding: 10px;
   }
   main {
-    padding: 30px 22px;
-  }
-  .page-title {
-    margin-bottom: 25px;
+    padding: 22px 16px 40px;
   }
   h1 {
     font-size: 26px;
   }
-  .overview {
-    margin-bottom: 26px;
-  }
   .stat-widget {
-    min-width: 160px;
-    min-height: 120px;
+    min-width: 0;
+    flex: 1;
     padding: 20px;
-  }
-  .stat-widget strong {
-    font-size: 34px;
-  }
-  .account-row {
-    grid-template-columns: 1fr 1fr 90px;
-    gap: 14px;
-  }
-  .status-cell {
-    grid-column: 1 / 3;
-    grid-row: 2;
-  }
-  .row-actions {
-    grid-column: 3;
-    grid-row: 1 / 3;
-  }
-  .provider-cell {
-    gap: 10px;
-  }
-  .toolbar label {
-    font-size: 0;
-  }
-  .toolbar select {
-    font-size: 11px;
-  }
-  .toolbar h2 {
-    font-size: 13px;
-  }
-}
-@media (max-width: 480px) {
-  .sidebar {
-    gap: 12px;
-    padding: 0 16px;
-  }
-  .nav-current {
-    padding: 10px;
-  }
-  .extension-button {
-    font-size: 9px;
-  }
-  main {
-    padding: 28px 16px;
-  }
-  .primary {
-    font-size: 11px;
-    padding: 10px 12px;
-  }
-  .toolbar {
-    padding: 16px;
-    gap: 7px;
-  }
-  .toolbar-actions {
-    gap: 5px;
-  }
-  .toolbar .quiet {
-    font-size: 0;
-    padding: 7px 9px;
-  }
-  .toolbar .quiet span {
-    font-size: 18px;
-    margin: 0;
   }
   .account-row {
     padding: 22px 16px;
-    grid-template-columns: 1fr 1fr;
-    gap: 13px;
+    gap: 16px;
   }
   .provider-cell {
-    grid-column: 1;
-  }
-  .balance-cell {
-    grid-column: 2;
-  }
-  .status-cell {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .row-actions {
-    grid-column: 2;
-    grid-row: 2;
+    gap: 10px;
   }
   .amount {
     font-size: 21px;
   }
-  .metric {
-    max-width: 155px;
-    margin-left: auto;
+  .toolbar-actions {
+    justify-content: space-between;
+    width: 100%;
   }
-  .overview {
-    gap: 10px;
+  .toolbar label {
+    font-size: 11px;
   }
-  .stat-widget {
-    min-width: 0;
-    width: 145px;
-  }
-  .stat-icon {
-    right: 15px;
+  .toolbar select {
+    margin-left: 0;
+    max-width: 135px;
   }
   .card-message {
     max-width: 150px;
@@ -783,4 +645,13 @@ code {
   * {
     scroll-behavior: auto !important;
   }
+}
+
+.icon img {
+  object-fit: contain;
+}
+.browser-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }

@@ -1,100 +1,98 @@
-# Credit Tracker
+# Stash
 
-A small, self-hosted dashboard for prepaid AI wallets and cloud usage. Connect OpenRouter, OpenAI, Higgsfield's API wallet, Railway, Vercel, and Supabase. Refresh on demand or on a schedule.
-
-![Dashboard with illustrative test balances](docs/dashboard.png)
-
-_Screenshot uses synthetic balances from automated tests, not live account data._
+A self-hosted tracker for **credits remaining** across AI providers and cloud services. MIT-licensed code, no subscription, no hosted browser service, and no LLM required.
 
 ## Run locally
 
-Requires **Node.js 22 or newer** and npm.
+Requires Node.js 22+ and npm. macOS, Windows, or Linux with a desktop display for the initial browser sign-in.
 
 ```sh
 npm ci
+npm run browser:install
 npm start
 ```
 
-Open **http://localhost:4747**. No account with Credit Tracker is needed. Choose **Add account**, then select a provider. Only connected providers appear on the dashboard. The server binds only to your computer's loopback interface; this release is a personal, single-user app. Do not expose it to the internet or proxy it without authentication.
+Open http://localhost:4747. Add an account, connect, and choose a refresh interval. Stash must stay running for scheduled checks; the dashboard and your everyday browser can be closed.
+
+Linux may need Playwright system dependencies (`npx playwright install --with-deps chromium`). To use an existing Chromium executable, set `STASH_BROWSER_EXECUTABLE` to its absolute path. Browser sign-in happens on the machine running Stash: a headless VPS needs a private desktop session for setup. There is no built-in remote login viewer.
 
 ## Connections
 
-| Provider   | API connection                                                                | Browser connection                                |
-| ---------- | ----------------------------------------------------------------------------- | ------------------------------------------------- |
-| OpenRouter | Management key → calculated credit balance                                    | Select remaining wallet balance                   |
-| OpenAI     | Organization admin key → calendar-month spend                                 | Select remaining prepaid balance                  |
-| Higgsfield | No supported wallet-read endpoint verified                                    | Select the **API console** wallet balance         |
-| Railway    | Account token or CLI login + workspace ID → billing-period usage and estimate | Select prepaid balance, allowance, or usage       |
-| Vercel     | Access token + team ID → calendar-month billed cost                           | Select remaining credit or usage figure           |
-| Supabase   | No full billing-read endpoint verified                                        | Select billing credit, allowance, or usage figure |
+| Provider          | Connection                       | What Stash reads                                                                  |
+| ----------------- | -------------------------------- | --------------------------------------------------------------------------------- |
+| OpenRouter        | Management API key               | Purchased credits minus total usage                                               |
+| Railway           | Account API token + workspace ID | `Customer.creditBalance`                                                          |
+| Vercel AI Gateway | AI Gateway API key               | `balance` from `/v1/credits`                                                      |
+| Supabase          | Local browser sign-in            | Exact dashboard `total_balance_cents` response, then selected balance as fallback |
+| OpenAI            | Local browser sign-in            | Selected prepaid balance                                                          |
+| Higgsfield        | Local browser sign-in            | Selected **API wallet** balance                                                   |
+| Vercel hosting    | Local browser sign-in            | Selected remaining credit balance, if the account has one                         |
 
-The browser connection exists because a generation API key does not necessarily grant access to a wallet balance. It reads a number you explicitly select on the provider's billing page, rather than estimating a balance from spending.
+Usage, spending caps, free-tier quotas, and prepaid wallet balances are different. Stash does not turn usage into a balance or combine unrelated currencies. Railway's separate included usage-credit field is not added to its wallet balance. A provider without a wallet should not be connected by selecting its spending number.
 
-For OpenAI, create an **organization admin key**, not a project generation key. For OpenRouter, use a **management key**. Vercel's token must have billing access for the supplied team. For Railway, use an **account token** (`RAILWAY_API_TOKEN` semantics), not a project deployment token; alternatively install the Railway CLI and run `railway login`. The adapter invokes pinned CLI version 5.63.1 through npx, which may download it on the first run.
+Railway can reuse an existing `railway login` when the token is left blank. This optional path runs the pinned `@railway/cli@5.63.1` through `npx`, which can download it on first use. Providing an account token uses a direct GraphQL request instead.
 
-### Browser extension setup (Chrome / Chromium)
+See [the provider audit](docs/provider-api-audit.json) and [the OpenAI audit](docs/openai-api-audit.json) for sources, response fields, and verification limits. Railway has been authenticated-tested; the other public API readers have source and fixture validation. Live browser accounts still need validation. Absence from a public schema is not proof that a private endpoint does not exist.
 
-1. Open `chrome://extensions`, enable **Developer mode**, select **Load unpacked**, and choose the project's `extension` directory.
-2. In the dashboard, open **Browser extension**, click **Get pairing code**, and paste it into the extension popup. The code expires in five minutes and works once.
-3. Connect a provider using **Browser balance**. Choose what the figure means (wallet balance, spend, or remaining allowance), its currency/unit, and its billing page URL.
-4. Sign in to the provider in Chrome. Open its billing page for the account you want to track.
-5. Open the extension, select the provider, and click **Select balance on this page**. Approve access to that provider's site.
-6. Click the balance number, check the displayed amount and unit, and select **Use this balance**.
+## Browser connection
 
-Only site access for the selected provider is requested. The extension does not read or transmit cookies, passwords, or API keys. It sends the selected number and its page location/context to the local app. A separate pairing token authorizes these updates and can be revoked from the dashboard.
+1. Add a provider using **Browser sign-in**, its billing URL, and balance unit.
+2. Stash opens a separate Chromium window. Sign in normally and navigate to your billing page.
+3. Click **Find balance**. Stash looks for one visible amount with a provider-specific remaining-balance label and the selected currency. Confirm the amount and account in the browser. If it cannot identify a unique balance, use **Select manually** and click the full number.
+4. Click **Done** in Stash to close the setup browser. Future checks launch and close a background browser automatically.
 
-The initial release supports full numeric amounts such as `$1,234.56`. Select one number, not a whole card with multiple amounts or an abbreviated `1.2k`. Pages inside cross-origin frames or closed shadow roots, alternate number formats, and balances only revealed by interacting with menus may require a different billing page and are not universally supported.
+**No AI key is required for API connections, browser setup, or scheduled refreshes.** Find balance uses ordinary code, with conservative English-language label rules. These are layout-independent heuristics, not verified live selectors for every provider. Multiple wallets, unfamiliar labels, or unsupported layouts fall back to manual selection. The initial confirmation is required before any balance is saved.
 
-### Refresh behavior
+No browser extension or saved password is required. Playwright reuses the provider's local login session. When a session expires, sign in again. If the selected element's surrounding label changes, Stash retains the last known balance and asks you to select again. Ambiguous or abbreviated amounts are rejected. Supported numeric format: `1,234.56`.
 
-- Default: hourly. Choose 15 minutes, 30 minutes, 3 hours, or off.
-- The Node process must remain running for API refreshes, even when the dashboard is closed.
-- Browser refresh also requires Chrome and the paired extension. Pending jobs are picked up about every 30 seconds.
-- Browser refresh opens the saved billing URL in a background tab and closes that temporary tab afterwards. It never clicks the provider's purchasing or generation controls.
-- The selected element must remain visible, unique, and in the same surrounding text context. Login expiry or layout changes produce an error; select the balance again to repair the connection.
-- Failed refreshes keep the last successful value, labeled with its timestamp and error. Provider reporting delays still apply.
-- Cloud spend is distinct from wallet balance. Each account shows its own reported value and unit; there is no combined wallet total.
+For Supabase, after selection, refresh watches for the exact organization credit-balance JSON response generated by the billing page. It does not copy or export session tokens. Other dashboard APIs are not guessed. The DOM selection remains the fallback until an authenticated endpoint and its meaning have been verified.
 
-## Data and security
+Only one browser operation per provider runs at once. Setup windows time out after 15 minutes. Disconnecting deletes that provider's stored API key, balance, and dedicated browser profile.
 
-Runtime state lives in `.private/app/`, excluded from Git. API credentials and the extension pairing token use AES-256-GCM encryption with a local, file-protected key. Back up the entire directory if you need to preserve connections; losing its key makes encrypted credentials unreadable. This protects against accidentally exposing the state file alone, not an attacker with access to your computer and key file.
+## Optional AI setup
 
-The server validates Host and Origin headers, requires a dashboard CSRF token for mutations, and requires a separate bearer token for extension updates. Provider URLs are allowlisted, API redirects are rejected, and provider error bodies are not logged. Disconnect removes the stored credential and current snapshot for that provider.
+AI help is disabled by default. It is an optional balance suggestion tool, not an autonomous browsing agent: sign in and open the billing page first. It can choose among the visible balance candidates when the deterministic rules cannot choose one. It cannot click through websites, access passwords, execute model-generated code, or set a balance. You confirm its suggestion in the browser; Stash re-reads the actual number before saving. Manual selection works even if the model fails.
 
-There is no telemetry, remote analytics, central account, or external font service. Your own providers still receive authenticated read requests and normal browser page loads.
+Configure an OpenAI-compatible chat endpoint using environment variables, then restart Stash:
 
-`CREDIT_TRACKER_DATA` can set a different runtime directory. `PORT` can change the web server port for development, but the bundled extension targets port **4747**. Use the default port for browser connections.
+| Variable            | Purpose                                                          |
+| ------------------- | ---------------------------------------------------------------- |
+| `STASH_AI_MODEL`    | Model name supporting JSON schema output; unset disables AI help |
+| `STASH_AI_BASE_URL` | API base URL; defaults to `https://openrouter.ai/api/v1`         |
+| `STASH_AI_API_KEY`  | A separate inference key, required for hosted endpoints          |
 
-## Development and tests
+For a local Ollama model, set `STASH_AI_BASE_URL=http://127.0.0.1:11434/v1` and `STASH_AI_MODEL` to a model you have installed that supports structured output. No model API key is required for a local endpoint. The model server must be running; local inference uses your hardware. Model quality varies and no local model is bundled or downloaded by Stash.
+
+For a hosted model, supply your own inference key. Your balance connector keys are never reused for AI. Model usage may cost money. Stash does not silently switch to a hosted model if a local model fails.
+
+The browser setup dialog shows **Optional AI help** only when configured. Clicking **Suggest a balance with AI** sends up to 30 short visible balance snippets, the provider name, and the chosen currency to the displayed endpoint. It does not send cookies, passwords, input values, full HTML, URLs or screenshots. A hosted model processes those snippets outside your computer. There is one request per click, with a 30-second timeout and 100 output-token limit. Automatic refreshes never invoke AI, even after AI-assisted setup.
+
+Examples of the supported request format: [OpenRouter structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs) and [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility). Configuration is read from the process environment; Stash does not automatically load `.env` files.
+
+## Self-hosting and data
+
+Stash binds to `127.0.0.1` and checks Host, Origin, and mutation CSRF tokens. This is a single-user local application, not a public multi-user web service. Keep it behind localhost or a private SSH tunnel; no public authentication layer is included.
+
+- Data defaults to `.private/app/`; override with `CREDIT_TRACKER_DATA`.
+- API keys are encrypted with a local AES-GCM key. The key is stored alongside the state, so this does not protect against someone who can read the entire data directory.
+- Chromium cookies and login state live in per-provider `browser-profiles/` directories. Treat the whole data directory as credentials. It is excluded from Git and uses restrictive permissions.
+- Stash does not log API keys, passwords, or browser cookies. It has no analytics or required paid inference dependency.
+- Set `PORT` to change the default `4747` port. Keep the process alive using your preferred service manager for scheduled checks.
+
+Older spend snapshots are cleared on upgrade. Unsupported API connections switch to browser setup; old extension pairing tokens are revoked. Browser selections that tracked spend must be selected again as a remaining balance. There is no extension runtime in this version.
+
+## Development
 
 ```sh
 npm ci
-npx playwright install chromium
-npm test
-npm run test:e2e
-npm run dev
+npm run browser:install
+npm run check
 ```
 
-Tests use synthetic provider responses and isolated temporary data, not your saved accounts. Browser tests load the real extension against six intercepted billing-page fixtures, confirm selected balances, refresh changed values, and verify layout-change failures retain old values. Optional host permissions are pre-granted in the test-only extension copy; Chrome's permission prompt is not automated.
+Tests cover decimal balances, missing fields, authentication guards, migration, scheduling, failed-refresh retention, Chromium session persistence, balance selection, changed pages, login expiry, Supabase dashboard-response parsing, deterministic discovery, ambiguous and mismatched balances, optional AI validation, and responsive dashboard interactions. Billing pages used in automated tests are synthetic fixtures; they do not demonstrate live provider access.
 
-`verify.py` is the original optional, dependency-free Python diagnostic tool. The dashboard does not depend on Python. Its older setup notes are in `README.txt`.
-
-## Limitations and roadmap
-
-- One connection per provider; multiple organizations/accounts are planned.
-- Browser access is a selectable-page connector, not a vendor-supported balance API. It can break when sites change. Real-account verification is needed for each provider's specific billing page.
-- No historical charts, top-up automation, email alerts, public hosting, or multi-user authentication in this release.
-- API and browser modes currently replace each other for a provider. Tracking wallet balance and API spend simultaneously is planned.
-
-## Provider documentation
-
-- [OpenRouter credits](https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits)
-- [OpenAI costs](https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs)
-- [Railway usage](https://docs.railway.com/cli/usage)
-- [Vercel billing charges](https://vercel.com/docs/rest-api/billing/list-focus-billing-charges)
-- [Higgsfield API documentation](https://docs.higgsfield.ai/docs)
-- [Supabase Management API](https://supabase.com/docs/reference/api/introduction)
+The legacy Python diagnostic in `verify.py` is independent of the app.
 
 ## License
 
-[MIT](LICENSE). You may use, modify, and redistribute this project under its license. This project is independent of the listed providers.
+Application code: [MIT](LICENSE). Provider logos and product names belong to their respective owners; see [asset attribution](docs/assets.txt). Provider services and credits may cost money; Stash itself does not charge for tracking them.

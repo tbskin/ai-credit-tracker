@@ -24,8 +24,8 @@ export const providers = [
     category: "AI wallets",
     url: "https://platform.openai.com/settings/organization/billing/overview",
     hosts: ["platform.openai.com"],
-    api: true,
-    apiLabel: "Organization admin key",
+    api: false,
+    apiLabel: "",
     metric: "balance",
   },
   {
@@ -53,7 +53,7 @@ export const providers = [
     hosts: ["railway.com", "railway.app"],
     api: true,
     apiLabel: "Railway account token (or existing CLI login)",
-    metric: "spend",
+    metric: "balance",
   },
   {
     id: "vercel",
@@ -63,9 +63,9 @@ export const providers = [
     category: "Cloud services",
     url: "https://vercel.com/account",
     hosts: ["vercel.com"],
-    api: true,
-    apiLabel: "Access token",
-    metric: "spend",
+    api: false,
+    apiLabel: "",
+    metric: "balance",
   },
   {
     id: "supabase",
@@ -76,7 +76,19 @@ export const providers = [
     url: "https://supabase.com/dashboard",
     hosts: ["supabase.com"],
     api: false,
-    metric: "spend",
+    metric: "balance",
+  },
+  {
+    id: "vercel-gateway",
+    name: "Vercel AI Gateway",
+    initial: "▲",
+    color: "#23283b",
+    category: "AI wallets",
+    url: "https://vercel.com/dashboard/ai-gateway",
+    hosts: ["vercel.com"],
+    api: true,
+    apiLabel: "AI Gateway API key",
+    metric: "balance",
   },
 ];
 export function provider(id) {
@@ -105,11 +117,15 @@ export function decimal(value) {
   if (!n.isFinite()) throw new ProviderError("Invalid amount.");
   return n;
 }
-async function api(url, token) {
+async function api(url, token, options = {}) {
   let response;
   try {
     response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       redirect: "error",
       signal: AbortSignal.timeout(30000),
     });
@@ -131,132 +147,71 @@ async function api(url, token) {
     throw new ProviderError("Billing response too large.");
   return text;
 }
+export const railwayBalanceQuery = `query StashBalance($id: String!) {
+  workspace(workspaceId: $id) { customer { creditBalance } }
+}`;
 export async function readProvider(id, config, secret, read = api) {
-  const now = new Date(),
-    start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  let value;
   if (id === "openrouter") {
     const { data } = JSON.parse(
       await read("https://openrouter.ai/api/v1/credits", secret),
     );
-    return {
-      value: decimal(data.total_credits)
-        .minus(decimal(data.total_usage))
-        .toString(),
-      unit: "USD",
-      kind: "balance",
-      label: "Credit balance",
-      detail: "Purchased credits less reported usage",
-    };
-  }
-  if (id === "openai") {
-    let total = new Decimal(0),
-      cursor,
-      seen = new Set();
-    for (let count = 0; count < 100; count++) {
-      const q = new URLSearchParams({
-        start_time: Math.floor(start / 1000),
-        end_time: Math.floor(now / 1000),
-        limit: 180,
-      });
-      if (cursor) q.set("page", cursor);
-      const page = JSON.parse(
-        await read(`https://api.openai.com/v1/organization/costs?${q}`, secret),
-      );
-      for (const bucket of page.data)
-        for (const row of bucket.results) {
-          if (row.amount?.currency !== "usd")
-            throw new ProviderError("Unsupported or missing billing currency.");
-          total = total.plus(decimal(row.amount.value));
-        }
-      if (page.has_more === false)
-        return {
-          value: total.toString(),
-          unit: "USD",
-          kind: "spend",
-          label: "Spent this month",
-          detail: "Calendar month · UTC · not wallet balance",
-          period: { start: start.toISOString(), end: now.toISOString() },
-        };
-      cursor = page.next_page;
-      if (!cursor || seen.has(cursor))
-        throw new ProviderError("Incomplete billing response.");
-      seen.add(cursor);
-    }
-    throw new ProviderError("Incomplete billing response.");
-  }
-  if (id === "vercel") {
-    const q = new URLSearchParams({
-      teamId: config.scope,
-      from: start.toISOString(),
-      to: now.toISOString(),
-    });
-    const text = await read(
-      `https://api.vercel.com/v1/billing/charges?${q}`,
-      secret,
+    value = decimal(data.total_credits).minus(decimal(data.total_usage));
+  } else if (id === "vercel-gateway") {
+    const data = JSON.parse(
+      await read("https://ai-gateway.vercel.sh/v1/credits", secret),
     );
-    let total = new Decimal(0),
-      rows = 0;
-    for (const line of text.split("\n").filter((l) => l.trim())) {
-      const row = JSON.parse(line);
-      if (row.BillingCurrency !== "USD")
-        throw new ProviderError("Unsupported or missing billing currency.");
-      total = total.plus(decimal(row.BilledCost));
-      rows++;
-    }
-    if (!rows)
-      throw new ProviderError(
-        "No billing rows reported yet. Try again after usage is available.",
+    value = decimal(data.balance);
+  } else if (id === "railway") {
+    let data;
+    if (secret) {
+      data = JSON.parse(
+        await read("https://backboard.railway.com/graphql/v2", secret, {
+          method: "POST",
+          body: JSON.stringify({
+            query: railwayBalanceQuery,
+            variables: { id: config.scope },
+          }),
+        }),
       );
-    return {
-      value: total.toString(),
-      unit: "USD",
-      kind: "spend",
-      label: "Billed cost this month",
-      detail: "Calendar month · UTC · provider reporting may lag",
-      period: { start: start.toISOString(), end: now.toISOString() },
-    };
-  }
-  if (id === "railway") {
-    let stdout;
-    try {
-      ({ stdout } = await exec(
-        "npx",
-        [
-          "--yes",
-          "--package",
-          "@railway/cli@5.63.1",
-          "railway",
-          "usage",
-          "--workspace",
-          config.scope,
-          "--json",
-        ],
-        {
-          timeout: 90000,
-          maxBuffer: 2000000,
-          env: {
-            ...process.env,
-            ...(secret ? { RAILWAY_API_TOKEN: secret } : {}),
-          },
-        },
-      ));
-    } catch {
-      throw new ProviderError(
-        "Railway could not read usage. Check your workspace ID and account token or run railway login.",
-      );
+    } else {
+      try {
+        const { stdout } = await exec(
+          "npx",
+          [
+            "--yes",
+            "--package",
+            "@railway/cli@5.63.1",
+            "railway",
+            "api",
+            railwayBalanceQuery,
+            "--variables",
+            JSON.stringify({ id: config.scope }),
+            "--compact",
+          ],
+          { timeout: 60000, maxBuffer: 2000000 },
+        );
+        data = JSON.parse(stdout);
+      } catch {
+        throw new ProviderError(
+          "Could not read Railway credits. Check your workspace and token, or run railway login.",
+        );
+      }
     }
-    const data = JSON.parse(stdout);
-    return {
-      value: decimal(data.currentUsageDollars).toString(),
-      unit: "USD",
-      kind: "spend",
-      label: "Used this billing period",
-      detail:
-        data.estimatedBillDollars == null
-          ? "Estimate unavailable"
-          : `Estimated bill $${decimal(data.estimatedBillDollars).toFixed(2)}`,
-      period: data.billingPeriod,
-    };
+    if (data.errors?.length)
+      throw new ProviderError(
+        "Railway denied the balance query. Check your account token and workspace.",
+      );
+    value = decimal(data.data?.workspace?.customer?.creditBalance);
+  } else {
+    throw new ProviderError(
+      "No verified public balance API. Connect with the local browser.",
+    );
   }
-  throw new ProviderError("Connect this provider with the browser extension.");
+  return {
+    value: value.toString(),
+    unit: "USD",
+    kind: "balance",
+    label: "Credits left",
+  };
 }

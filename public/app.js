@@ -2,7 +2,11 @@ const $ = (s) => document.querySelector(s);
 let state,
   selected,
   mode = "api",
-  toastTimer;
+  toastTimer,
+  browserProvider,
+  browserError,
+  browserInitialUpdate,
+  browserHint;
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,
@@ -49,11 +53,7 @@ function stale(a) {
 }
 function low(a) {
   return (
-    a?.snapshot &&
-    a.threshold != null &&
-    (a.snapshot.kind === "spend"
-      ? Number(a.snapshot.value) > a.threshold
-      : Number(a.snapshot.value) < a.threshold)
+    a?.snapshot && a.threshold != null && Number(a.snapshot.value) < a.threshold
   );
 }
 function money(s) {
@@ -81,10 +81,10 @@ function card(p) {
             ? age(s.updatedAt)
             : "Awaiting balance";
   return `<article class="card account-row ${needs ? "alert" : ""}">
-    <div class="provider-cell"><span class="icon icon-${p.id}">${esc(p.initial)}</span><div><h3>${esc(p.name)}</h3><span class="source">${p.id === "higgsfield" ? "API wallet" : a.mode === "api" ? "API" : "Browser"}</span></div></div>
+    <div class="provider-cell"><span class="icon icon-${p.id}"><img src="/icons/${p.id}.${p.id === "higgsfield" ? "png" : "svg"}" alt="" width="24" height="24" /></span><div><h3>${esc(p.name)}</h3><span class="source">${p.id === "higgsfield" ? "API wallet" : a.mode === "api" ? "API" : "Browser"}</span></div></div>
     <div class="balance-cell"><div class="amount">${s ? money(s) : "—"}</div><div class="metric">${esc(s?.label || "Balance")}</div></div>
-    <div class="status-cell"><span class="status ${needs ? "status-warning" : ""}"><span class="dot ${needs ? "" : "live"}"></span>${esc(status)}</span>${a.error ? `<p class="card-message">${esc(a.error)}</p>` : !s && a.mode === "browser" ? '<p class="card-message">Select a balance with the extension.</p>' : ""}</div>
-    <div class="row-actions"><a class="icon-button" href="${esc(a.config.url || p.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${p.name} billing" title="Open billing">↗</a><button class="icon-button" data-refresh="${p.id}" aria-label="Refresh ${p.name}" title="Refresh" ${p.refreshing ? "disabled" : ""}>↻</button><button class="icon-button" data-manage="${p.id}" aria-label="Manage ${p.name}" title="Manage">···</button></div>
+    <div class="status-cell"><span class="status ${needs ? "status-warning" : ""}"><span class="dot ${needs ? "" : "live"}"></span>${esc(status)}</span>${a.error ? `<p class="card-message">${esc(a.error)}</p>` : !s && a.mode === "browser" ? '<p class="card-message">Connect browser to select your balance.</p>' : ""}</div>
+    <div class="row-actions">${a.mode === "browser" ? `<button class="icon-button" data-browser="${p.id}" aria-label="Connect browser for ${p.name}" title="Connect browser">▣</button>` : ""}<a class="icon-button" href="${esc(a.config.url || p.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${p.name} billing" title="Open billing">↗</a><button class="icon-button" data-refresh="${p.id}" aria-label="Refresh ${p.name}" title="Refresh" ${p.refreshing ? "disabled" : ""}>↻</button><button class="icon-button" data-manage="${p.id}" aria-label="Manage ${p.name}" title="Manage">···</button></div>
   </article>`;
 }
 function render() {
@@ -103,11 +103,27 @@ function render() {
       .filter((p) => !p.account)
       .map(
         (p) =>
-          `<button class="provider-option" data-manage="${p.id}" aria-label="Connect ${p.name}"><span class="icon icon-${p.id}">${esc(p.initial)}</span><span>${esc(p.name)}</span><span class="option-plus" aria-hidden="true">+</span></button>`,
+          `<button class="provider-option" data-manage="${p.id}" aria-label="Connect ${p.name}"><span class="icon icon-${p.id}"><img src="/icons/${p.id}.${p.id === "higgsfield" ? "png" : "svg"}" alt="" width="24" height="24" /></span><span>${esc(p.name)}</span><span class="option-plus" aria-hidden="true">+</span></button>`,
       )
       .join("") || "<p>All available providers are connected.</p>";
   $("#interval").value = state.interval;
-  $("#bridge-dot").classList.toggle("live", state.bridgeConnected);
+  if (browserProvider) {
+    const p = state.providers.find((p) => p.id === browserProvider);
+    if (
+      p?.account?.snapshot &&
+      p.account.snapshot.updatedAt !== browserInitialUpdate
+    )
+      browserHint = null;
+    $("#browser-status").textContent =
+      browserError ||
+      browserHint ||
+      (p?.account?.snapshot &&
+      p.account.snapshot.updatedAt !== browserInitialUpdate
+        ? "Balance saved. Click Done to close the setup browser."
+        : p?.browserOpen
+          ? "Sign in, then click Find balance. No AI key needed."
+          : "Open the browser to connect.");
+  }
   $("#refresh-all").disabled =
     !connected.length || state.providers.some((p) => p.refreshing);
 }
@@ -125,28 +141,23 @@ function fields() {
   )
     .map(
       (m) =>
-        `<button type="button" data-mode="${m}" class="${mode === m ? "active" : ""}">${m === "api" ? "API connection" : "Browser balance"}</button>`,
+        `<button type="button" data-mode="${m}" class="${mode === m ? "active" : ""}">${m === "api" ? "API key" : "Browser sign-in"}</button>`,
     )
     .join("");
   const a = selected.account;
   if (mode === "api") {
     $("#fields").innerHTML =
-      `<p>${selected.id === "openrouter" ? "Reads your credit balance." : selected.id === "railway" ? "Reads usage and estimated billing." : "Tracks spend. Use Browser balance for wallet credits."}</p><label class="field">${esc(selected.apiLabel)}<input name="secret" type="password" autocomplete="off" ${selected.id === "railway" ? "" : "required"}></label>${["railway", "vercel"].includes(selected.id) ? `<label class="field">${selected.id === "railway" ? "Workspace" : "Team"} ID<input name="scope" required value="${esc(a?.config.scope || "")}" placeholder="${selected.id === "railway" ? "Your workspace ID" : "team_…"}"></label>` : ""}${selected.id === "railway" ? "<small>Leave the token empty to use your existing Railway CLI login.</small>" : ""}`;
+      `<label class="field">${esc(selected.apiLabel)}<input name="secret" type="password" autocomplete="off" ${selected.id === "railway" ? "" : "required"}></label>${selected.id === "railway" ? `<label class="field">Workspace ID<input name="scope" required value="${esc(a?.config.scope || "")}"></label><small>Leave the token empty to use your Railway CLI login.</small>` : ""}`;
   } else {
     $("#fields").innerHTML =
-      `<p><button class="quiet" type="button" id="setup-extension">Set up extension</button></p><label class="field">Billing page URL<input name="url" type="url" required value="${esc(a?.config.url || selected.url)}"><small>Use your account’s billing URL.</small></label><label class="field">What are you tracking?<select name="kind"><option value="balance">Remaining wallet balance</option><option value="spend">Spend this billing period</option><option value="allowance">Remaining included allowance</option></select></label><label class="field">Unit<select name="unit"><option>USD</option><option>credits</option><option>EUR</option><option>GBP</option></select></label><p class="note">After connecting, choose Select balance in the extension.</p>`;
-    $("[name=kind]").value = a?.config.kind || selected.metric;
+      `<label class="field">Billing page URL<input name="url" type="url" required value="${esc(a?.config.url || selected.url)}"></label><label class="field">Balance unit<select name="unit"><option>USD</option><option>credits</option><option>EUR</option><option>GBP</option></select></label><p>Sign in using a local browser. Your session stays on this computer.</p>`;
     $("[name=unit]").value = a?.config.unit || "USD";
   }
 }
 function openConnect(id) {
   $("#add-dialog").close();
   selected = state.providers.find((p) => p.id === id);
-  mode =
-    selected.account?.mode ||
-    (selected.id === "openrouter" || selected.id === "railway"
-      ? "api"
-      : "browser");
+  mode = selected.account?.mode || (selected.api ? "api" : "browser");
   $("#connect-title").textContent = selected.name;
   $("#connect-form [name=provider]").value = id;
   $("#connect-form [name=threshold]").value = selected.account?.threshold ?? "";
@@ -155,8 +166,44 @@ function openConnect(id) {
   fields();
   $("#connect-dialog").showModal();
 }
-function showExtension() {
-  $("#extension-dialog").showModal();
+async function showBrowser(id) {
+  browserProvider = id;
+  browserError = null;
+  browserHint = null;
+  $("#ai-setup").hidden = !state.ai?.enabled;
+  $("#ai-setup").open = false;
+  $("#ai-destination").textContent = state.ai?.enabled
+    ? `Sends visible balance labels and amounts to ${state.ai.destination}${state.ai.local ? " on this computer" : " using your model key"}. You confirm the result. Scheduled refreshes never use AI.`
+    : "";
+  browserInitialUpdate = state.providers.find((p) => p.id === id)?.account
+    ?.snapshot?.updatedAt;
+  $("#browser-title").textContent = state.providers.find(
+    (p) => p.id === id,
+  ).name;
+  $("#browser-dialog").showModal();
+  await browserAction("open");
+}
+async function browserAction(action) {
+  browserError = null;
+  browserHint = null;
+  const buttons = $("#browser-dialog").querySelectorAll("button");
+  buttons.forEach((b) => (b.disabled = true));
+  try {
+    await api("browser/" + action, { provider: browserProvider });
+    if (["find", "assist"].includes(action))
+      browserHint =
+        "Check the suggested balance in the browser, then confirm it.";
+    if (action === "select")
+      browserHint = "Click your remaining balance in the browser.";
+    await load();
+    return true;
+  } catch (e) {
+    browserError = e.message;
+    $("#browser-status").textContent = browserError;
+    return false;
+  } finally {
+    buttons.forEach((b) => (b.disabled = false));
+  }
 }
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("button");
@@ -173,7 +220,7 @@ document.addEventListener("click", async (e) => {
       await api("refresh", { provider: b.dataset.refresh });
       await load();
     }
-    if (b.id === "setup-extension") showExtension();
+    if (b.dataset.browser) await showBrowser(b.dataset.browser);
   } catch (err) {
     toast(err.message);
   }
@@ -190,11 +237,8 @@ $("#connect-form").addEventListener("submit", async (e) => {
     });
     $("#connect-dialog").close();
     await load();
-    toast(
-      mode === "browser"
-        ? "Connected. Select the balance from your billing page with the extension."
-        : "Connected. Fetching your latest numbers.",
-    );
+    if (mode === "browser") await showBrowser(selected.id);
+    else toast("Connected. Checking balance.");
   } catch (err) {
     $("#form-error").textContent = err.message;
   } finally {
@@ -204,7 +248,7 @@ $("#connect-form").addEventListener("submit", async (e) => {
 $("#disconnect").onclick = async () => {
   if (
     !confirm(
-      `Disconnect ${selected.name}? Its stored key and balance will be removed.`,
+      `Disconnect ${selected.name}? Its stored key, browser session, and balance will be removed.`,
     )
   )
     return;
@@ -235,26 +279,18 @@ $("#interval").onchange = async (e) => {
     toast(e.message);
   }
 };
-$("#extension-button").onclick = showExtension;
 $("#add-account").onclick = () => $("#add-dialog").showModal();
-$("#pair").onclick = async () => {
-  try {
-    const result = await api("pair", {});
-    $("#pairing-box").hidden = false;
-    $("#pair-code").value = result.code;
-    $("#pair-code").select();
-  } catch (e) {
-    toast(e.message);
-  }
+$("#browser-open").onclick = () => browserAction("open");
+$("#browser-find").onclick = () => browserAction("find");
+$("#browser-assist").onclick = () => browserAction("assist");
+$("#browser-select").onclick = () => browserAction("select");
+$("#browser-done").onclick = async () => {
+  if (await browserAction("close")) $("#browser-dialog").close();
 };
-$("#unpair").onclick = async () => {
-  try {
-    await api("unpair", {});
-    await load();
-    toast("Extension unpaired.");
-  } catch (e) {
-    toast(e.message);
-  }
-};
+$("#browser-close").onclick = $("#browser-done").onclick;
+$("#browser-dialog").addEventListener("cancel", (event) => {
+  event.preventDefault();
+  if (!$("#browser-done").disabled) $("#browser-done").click();
+});
 await load();
 setInterval(load, 4000);

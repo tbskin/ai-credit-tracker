@@ -1,0 +1,52 @@
+{
+  "checked_at_utc": "2026-10-02T17:51:26.071962+00:00",
+  "scope": "Published OpenAI API specification, official Python and Node SDK source, unauthenticated dashboard endpoint probes, billing dashboard access check. Not an authenticated account test.",
+  "specification": {
+    "url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.json",
+    "sha256": "055a5f2f33d2341512a9fa6cb324a7da8e76208ac7dc4d01c2fb9b5e6fed82ca",
+    "paths": 226,
+    "operations": 353,
+    "schemas": 1957
+  },
+  "terms": [
+    "balance",
+    "credit",
+    "prepaid",
+    "billing",
+    "wallet",
+    "funds",
+    "quota",
+    "remaining",
+    "grant",
+    "subscription",
+    "payment"
+  ],
+  "findings": {
+    "prepaid_balance_field": "Not found in the published specification or SDKs scanned. This does not establish absence from private APIs.",
+    "costs_result_fields": [
+      "api_source",
+      "object",
+      "amount",
+      "line_item",
+      "project_id",
+      "api_key_id",
+      "quantity",
+      "quantity_unit"
+    ],
+    "organization_spend_limit_fields": [
+      "object",
+      "threshold_amount",
+      "currency",
+      "interval",
+      "enforcement"
+    ],
+    "remaining_fields": "Realtime rate limits and request/image/token capacity, not dollars remaining.",
+    "legacy_dashboard_probes": {
+      "/dashboard/billing/credit_grants": "401: Missing bearer or basic authentication in header",
+      "/dashboard/billing/subscription": "401: Missing bearer or basic authentication in header"
+    },
+    "probe_limit": "An unauthenticated 401 does not establish that an endpoint exists, works, or accepts a normal API key.",
+    "dashboard": "Billing overview redirected to login in the accessible browser.",
+    "next_validation": "Authenticated read-only billing dashboard inspection to verify its actual balance response and authentication requirements."
+  }
+}

@@ -3,22 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Credit Tracker</title>
+    <title>Stash</title>
+    <meta name="theme-color" content="#8cbae8" />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <div class="shell">
-      <aside class="sidebar">
-        <a class="brand" href="/" aria-label="Credit Tracker home"
-          ><span class="mark">▰</span><span>Credit <br />Tracker</span></a
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Stash home"
+          ><img src="/brand/wallet.svg" alt="" width="64" height="64" /><span
+            >stash</span
+          ></a
         >
-        <a class="nav-current" href="/" aria-current="page"
-          ><span aria-hidden="true">▤</span> Accounts</a
-        >
-        <button id="extension-button" class="extension-button">
-          Browser extension <span id="bridge-dot" class="dot"></span>
-        </button>
-      </aside>
+      </header>
       <main>
         <div class="page-title">
           <h1>Accounts</h1>
@@ -45,12 +45,12 @@
           <div class="toolbar">
             <div class="toolbar-actions">
               <label
-                >Auto-refresh
+                >Check balances
                 <select id="interval" aria-label="Auto-refresh interval">
-                  <option value="15">15 min</option>
-                  <option value="30">30 min</option>
-                  <option value="60" selected>Hourly</option>
-                  <option value="180">3 hours</option>
+                  <option value="15">Every 15 minutes</option>
+                  <option value="30">Every 30 minutes</option>
+                  <option value="60" selected>Every hour</option>
+                  <option value="180">Every 3 hours</option>
                   <option value="0">Off</option>
                 </select></label
               ><button id="refresh-all" class="quiet">
@@ -90,9 +90,7 @@
             min="0"
             step="any"
             placeholder="e.g. 10"
-          /><small
-            >Flag balances below this amount, or spend above it.</small
-          ></label
+          /><small>Flag balances below this amount.</small></label
         >
         <p id="form-error" class="error" role="alert"></p>
         <div class="modal-actions">
@@ -104,42 +102,29 @@
         </div>
       </form>
     </dialog>
-    <dialog id="extension-dialog">
+    <dialog id="browser-dialog" aria-labelledby="browser-title">
       <div class="modal-heading">
-        <div>
-          <h2>Browser extension</h2>
-        </div>
-        <button class="close" data-close aria-label="Close">×</button>
+        <h2 id="browser-title">Connect browser</h2>
+        <button class="close" id="browser-close" aria-label="Close">×</button>
       </div>
-      <p>Select a balance on your billing page.</p>
-      <ol class="steps">
-        <li>
-          Open <strong>chrome://extensions</strong>, turn on Developer mode, and
-          choose <strong>Load unpacked</strong>. Select this project’s
-          <code>extension</code> folder.
-        </li>
-        <li>
-          Click <strong>Get pairing code</strong> below, then paste it into the
-          extension popup.
-        </li>
-        <li>
-          Connect a provider with the Browser method. Open its billing page,
-          then choose <strong>Select balance</strong> in the extension.
-        </li>
-      </ol>
-      <div id="pairing-box" hidden>
-        <label class="field"
-          >Pairing code <input id="pair-code" readonly /></label
-        ><small
-          >Valid for 5 minutes. Pairing again replaces the previous
-          connection.</small
-        >
+      <p>
+        Sign in and open your billing page. Find your balance, then confirm it
+        in the browser.
+      </p>
+      <p id="browser-status" role="status"></p>
+      <div class="browser-actions">
+        <button class="quiet" id="browser-open">Open browser</button>
+        <button class="primary" id="browser-find">Find balance</button>
+        <button class="quiet" id="browser-select">Select manually</button>
+        <button class="quiet" id="browser-done">Done</button>
       </div>
-      <p class="note">Keep Chrome open for automatic refresh.</p>
-      <div class="modal-actions">
-        <button class="quiet" id="unpair">Unpair extension</button
-        ><button class="primary" id="pair">Get pairing code</button>
-      </div>
+      <details id="ai-setup" hidden>
+        <summary>Optional AI help</summary>
+        <p id="ai-destination"></p>
+        <button class="quiet" id="browser-assist">
+          Suggest a balance with AI
+        </button>
+      </details>
     </dialog>
     <div id="toast" role="status" hidden></div>
     <script type="module" src="/app.js"></script>
