@@ -55,8 +55,6 @@ Stash tracks **remaining wallet credits**, keeping each provider and currency se
 
 Spending, monthly budgets, rate limits, and free-tier allowances are different from wallet credits. Stash does not present those numbers as money left to spend. For example, Railway's separate included usage credits are not added to its wallet balance.
 
-**Current validation:** Railway has been tested against a live account. Other API readers and browser flows have source and automated fixture validation, but still need live-account validation. Browser detection may need manual selection. See the [provider audit](docs/provider-api-audit.json) for the evidence and limits of each connection.
-
 ## Usage
 
 ### 1. Connect an account
