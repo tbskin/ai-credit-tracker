@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/brand/stash-lockup.png" alt="Stash" width="280" />
+  <img src="public/brand/stash-wordmark.png" alt="Stash" width="280" />
 </p>
 <p align="center"><strong>A self-hosted credit tracker for AI and cloud services.</strong></p>
 <p align="center">
