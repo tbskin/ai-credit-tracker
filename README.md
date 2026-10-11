@@ -1,25 +1,27 @@
 <p align="center">
-  <img src="public/brand/wallet.svg" alt="Stash logo" width="128" height="128" />
+  <img src="public/brand/stash-lockup.png" alt="Stash" width="280" />
 </p>
-<h1 align="center">Stash</h1>
-<p align="center"><strong>Know how many credits you have left.</strong></p>
-<p align="center">A free, open-source tracker for your AI and cloud credit balances. Runs on your computer.</p>
+<p align="center"><strong>A self-hosted credit tracker for AI and cloud services.</strong></p>
 <p align="center">
-  <a href="#get-started">Get started</a> ·
-  <a href="#what-stash-tracks">Providers</a> ·
-  <a href="#how-to-use-stash">How to use it</a> ·
-  <a href="docs/technical-guide.md">Technical guide</a>
+  <a href="#installation">Installation</a> ·
+  <a href="#supported-providers">Providers</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="docs/technical-guide.md">Documentation</a>
 </p>
 
-## Why Stash exists
+Stash brings your remaining credits from OpenAI, OpenRouter, Higgsfield, and other providers into one local dashboard. Connect your accounts, check balances, and see which wallets need a top-up.
 
-You top up OpenAI, add money to OpenRouter, buy Higgsfield credits, and fund other services. Each balance lives in a different dashboard. To find out what is left, you have to open every account and check it yourself.
+When every provider has its own wallet and billing page, keeping track means opening each account separately. Stash was built to make that a single check, so a depleted balance does not have to be the first sign that you are running low.
 
-That makes it easy to miss a low balance, buy more credits while money sits unused elsewhere, or interrupt a workflow when a wallet runs out. Billing pages make this harder by putting spending, budgets, and remaining credits next to each other.
+## Features
 
-**Stash was created to answer one question: how many credits do I have left in each service?** Connect the accounts you use and see their remaining balances in one place. Refresh them on demand or on a schedule, and set a threshold to flag low balances in the dashboard.
+- **Remaining credits in one place.** Each account shows its balance, last update, and connection status.
+- **API and browser connections.** Use a provider key or sign in through a local browser, with no extension required.
+- **Manual or scheduled refreshes.** Check one account, refresh all, or choose an interval while Stash is running.
+- **Low-balance indicators.** Set a threshold for each account to flag when it needs attention.
+- **Free and self-hosted.** MIT-licensed code, local credential storage, and no AI model key required for core tracking.
 
-## Get started
+## Installation
 
 You need **Git, Node.js 22 or later, and npm**. Browser connections also need a desktop session for the first sign-in.
 
@@ -37,7 +39,7 @@ API-only users can skip `npm run browser:install`. On Linux, use `npx playwright
 
 **No AI model key, browser extension, or paid browser service is required.** API connections use the provider's key to read your balance. Browser connections use a login session saved on your computer.
 
-## What Stash tracks
+## Supported providers
 
 Stash tracks **remaining wallet credits**, keeping each provider and currency separate.
 
@@ -55,7 +57,7 @@ Spending, monthly budgets, rate limits, and free-tier allowances are different f
 
 **Current validation:** Railway has been tested against a live account. Other API readers and browser flows have source and automated fixture validation, but still need live-account validation. Browser detection may need manual selection. See the [provider audit](docs/provider-api-audit.json) for the evidence and limits of each connection.
 
-## How to use Stash
+## Usage
 
 ### 1. Connect an account
 
