@@ -59,6 +59,10 @@ Examples of the supported request format: [OpenRouter structured outputs](https:
 
 ## Self-hosting and data
 
+Use Node.js 22 or 24 LTS. The repository pins Node.js 24 in `.nvmrc`; with nvm installed, run `nvm install && nvm use`. Chromium archive extraction stalled under Node.js 26 during local validation, so the browser installer rejects unsupported Node versions before downloading.
+
+`npm run browser:install` installs the matching Chromium build and verifies actual browser startup. `npm run browser:check` repeats that check without downloading. It checks both a background browser and a visible sign-in window on desktop machines. Without a Linux display, only the background check runs, and the command reports that sign-in still needs a desktop.
+
 Browser sign-in happens on the machine running Stash. macOS and Windows need a desktop session; Linux needs a display for the initial sign-in. A headless VPS needs a private desktop session for setup. There is no built-in remote login viewer.
 
 On Linux, install browser system dependencies with `npx playwright install --with-deps chromium`. To use an existing Chromium executable, set `STASH_BROWSER_EXECUTABLE` to its absolute path.

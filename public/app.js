@@ -1,3 +1,43 @@
+const link = (url, text) =>
+  `<a href="${url}" target="_blank" rel="noopener noreferrer">${text} ↗</a>`;
+
+const guides = {
+  openrouter: {
+    steps: [
+      `Open ${link("https://openrouter.ai/settings/management-keys", "OpenRouter management keys")} and sign in.`,
+      "Choose <strong>Create New Key</strong>, name it <strong>Stash</strong>, and choose an expiration.",
+      "Copy the key, paste it below, then click <strong>Connect account</strong>.",
+    ],
+    note: "A management key can administer your OpenRouter account. Stash uses it only to read credits. A regular model API key will not work here.",
+  },
+  "vercel-gateway": {
+    steps: [
+      `Open ${link("https://vercel.com/d?title=AI+Gateway+API+Keys&to=%2F%5Bteam%5D%2F~%2Fai-gateway%2Fapi-keys", "AI Gateway keys")} and select your Vercel team.`,
+      "Choose <strong>Create key</strong> and name it <strong>Stash</strong>.",
+      "Copy the key, paste it below, then click <strong>Connect account</strong>.",
+    ],
+    note: "This tracks your AI Gateway wallet. Stash only reads the balance; it does not make model requests.",
+  },
+  railway: {
+    steps: [
+      `Open ${link("https://railway.com/account/tokens", "Railway account tokens")} and create an account token with <strong>No workspace</strong> selected.`,
+      "Paste the token and the ID of the workspace whose credits you want to track.",
+      "Click <strong>Connect account</strong>.",
+    ],
+    note: "Already signed in with the Railway CLI? Leave the token blank to reuse that login.",
+  },
+};
+
+function connectionHelp(id) {
+  const guide = guides[id];
+  if (!guide) return "";
+  return `<section class="connection-help" aria-label="Connection steps">
+    <h3>Get your key</h3>
+    <ol>${guide.steps.map((step) => `<li>${step}</li>`).join("")}</ol>
+    <p>${guide.note}</p>
+  </section>`;
+}
+
 const $ = (s) => document.querySelector(s);
 let state,
   selected,
@@ -69,22 +109,24 @@ function card(p) {
   const a = p.account,
     s = a.snapshot,
     needs = a.error || low(a) || stale(a);
-  const status = a.error
-    ? "Refresh failed"
-    : low(a)
-      ? "Threshold reached"
-      : stale(a)
-        ? "Outdated"
-        : p.refreshing
-          ? "Refreshing…"
-          : s
-            ? age(s.updatedAt)
-            : "Awaiting balance";
+  const status = p.browserOpen
+    ? "Finish setup"
+    : a.error
+      ? "Refresh failed"
+      : low(a)
+        ? "Threshold reached"
+        : stale(a)
+          ? "Outdated"
+          : p.refreshing
+            ? "Refreshing…"
+            : s
+              ? age(s.updatedAt)
+              : "Awaiting balance";
   return `<article class="card account-row ${needs ? "alert" : ""}">
     <div class="provider-cell"><span class="icon icon-${p.id}"><img src="/icons/${p.id}.${p.id === "higgsfield" ? "png" : "svg"}" alt="" width="24" height="24" /></span><div><h3>${esc(p.name)}</h3><span class="source">${p.id === "higgsfield" ? "API wallet" : a.mode === "api" ? "API" : "Browser"}</span></div></div>
     <div class="balance-cell"><div class="amount">${s ? money(s) : "—"}</div><div class="metric">${esc(s?.label || "Balance")}</div></div>
     <div class="status-cell"><span class="status ${needs ? "status-warning" : ""}"><span class="dot ${needs ? "" : "live"}"></span>${esc(status)}</span>${a.error ? `<p class="card-message">${esc(a.error)}</p>` : !s && a.mode === "browser" ? '<p class="card-message">Connect browser to select your balance.</p>' : ""}</div>
-    <div class="row-actions">${a.mode === "browser" ? `<button class="icon-button" data-browser="${p.id}" aria-label="Connect browser for ${p.name}" title="Connect browser">▣</button>` : ""}<a class="icon-button" href="${esc(a.config.url || p.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${p.name} billing" title="Open billing">↗</a><button class="icon-button" data-refresh="${p.id}" aria-label="Refresh ${p.name}" title="Refresh" ${p.refreshing ? "disabled" : ""}>↻</button><button class="icon-button" data-manage="${p.id}" aria-label="Manage ${p.name}" title="Manage">···</button></div>
+    <div class="row-actions">${a.mode === "browser" ? `<button class="icon-button" data-browser="${p.id}" aria-label="Connect browser for ${p.name}" title="Connect browser">▣</button>` : ""}<a class="icon-button" href="${esc(a.config.url || p.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${p.name} billing" title="Open billing">↗</a><button class="icon-button" data-refresh="${p.id}" aria-label="Refresh ${p.name}" title="Refresh" ${p.refreshing || p.browserOpen ? "disabled" : ""}>↻</button><button class="icon-button" data-manage="${p.id}" aria-label="Manage ${p.name}" title="Manage">···</button></div>
   </article>`;
 }
 function render() {
@@ -147,6 +189,7 @@ function fields() {
   const a = selected.account;
   if (mode === "api") {
     $("#fields").innerHTML =
+      connectionHelp(selected.id) +
       `<label class="field">${esc(selected.apiLabel)}<input name="secret" type="password" autocomplete="off" ${selected.id === "railway" ? "" : "required"}></label>${selected.id === "railway" ? `<label class="field">Workspace ID<input name="scope" required value="${esc(a?.config.scope || "")}"></label><small>Leave the token empty to use your Railway CLI login.</small>` : ""}`;
   } else {
     $("#fields").innerHTML =

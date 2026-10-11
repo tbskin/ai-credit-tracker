@@ -23,7 +23,7 @@ When every provider has its own wallet and billing page, keeping track means ope
 
 ## Installation
 
-You need **Git, Node.js 22 or later, and npm**. Browser connections also need a desktop session for the first sign-in.
+You need **Git, Node.js 22 or 24 LTS, and npm**. Node.js 24 is recommended and pinned in `.nvmrc`. Browser connections also need a desktop session for the first sign-in.
 
 ```sh
 git clone https://github.com/tbskin/ai-credit-tracker.git
@@ -36,6 +36,8 @@ npm start
 Open **[localhost:4747](http://localhost:4747)** and click **Add account**.
 
 API-only users can skip `npm run browser:install`. On Linux, use `npx playwright install --with-deps chromium` if browser system dependencies are missing.
+
+Browser installation checks that Chromium can open a sign-in window and run background refreshes. Run `npm run browser:check` to check an existing installation. On a headless Linux machine, the sign-in window check is skipped; run it again from a desktop session.
 
 **No AI model key, browser extension, or paid browser service is required.** API connections use the provider's key to read your balance. Browser connections use a login session saved on your computer.
 

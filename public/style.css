@@ -476,6 +476,34 @@ dialog::backdrop {
   font-weight: 550;
   margin: 18px 0;
 }
+.connection-help {
+  padding: 16px;
+  border: 1px solid #d6e4f2;
+  border-radius: 10px;
+  background: #f2f7fc;
+}
+.connection-help h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.connection-help ol {
+  margin: 0;
+  padding-left: 19px;
+}
+.connection-help li {
+  padding-left: 3px;
+  margin: 7px 0;
+  color: #465e76;
+}
+.connection-help a {
+  color: #245b94;
+  text-underline-offset: 3px;
+}
+.connection-help p {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: #596c80;
+}
 .field input,
 .field select {
   display: block;

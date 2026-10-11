@@ -229,6 +229,13 @@ test("local server protects mutations and supports browser capture, refresh and 
     assert.ok(
       app.state().providers.find((p) => p.id === "higgsfield").browserOpen,
     );
+    await app.refresh("higgsfield");
+    assert.equal(app.store.data.accounts.higgsfield.snapshot.value, "9.5");
+    assert.equal(app.store.data.accounts.higgsfield.error, null);
+    assert.equal(
+      (await request("/api/refresh", { provider: "higgsfield" }, auth)).status,
+      400,
+    );
     await request("/api/browser/close", { provider: "higgsfield" }, auth);
     await app.refresh("higgsfield");
     assert.equal(app.store.data.accounts.higgsfield.snapshot.value, "8");

@@ -91,7 +91,7 @@ export function createApp({
   }
   async function refresh(id) {
     const a = store.data.accounts[id];
-    if (!a || busy.has(id)) return;
+    if (!a || busy.has(id) || harness.isOpen(id)) return;
     busy.add(id);
     a.lastAttempt = new Date().toISOString();
     a.error = null;
@@ -284,6 +284,10 @@ export function createApp({
         const b = await body(req);
         if (b.provider) {
           provider(b.provider);
+          if (harness.isOpen(b.provider))
+            throw new ProviderError(
+              "Finish browser setup before refreshing this account.",
+            );
           void refresh(b.provider);
         } else for (const p of providers) void refresh(p.id);
         return json(res, 202, { ok: true });
